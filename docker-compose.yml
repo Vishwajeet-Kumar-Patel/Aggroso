@@ -1,0 +1,41 @@
+# ===================================================================
+# Docker Compose: Full Stack Development/Demo
+# ===================================================================
+# Usage:
+#   docker compose up --build
+#   Open http://localhost:3000
+# ===================================================================
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_DB_URL=sqlite:///./app.db
+      - TARGET_DB_URL=sqlite:///./target.db
+      - ENABLE_FAULT_INJECTION=false
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+    volumes:
+      - backend-data:/app/data_db
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  backend-data:

@@ -1,0 +1,126 @@
+{
+  "rules": [
+    {
+      "name": "rename",
+      "description": "Rename or pass through a field without value transformation",
+      "category": "basic",
+      "params_schema": {}
+    },
+    {
+      "name": "trim",
+      "description": "Strip leading and trailing whitespace characters",
+      "category": "string",
+      "params_schema": {}
+    },
+    {
+      "name": "uppercase",
+      "description": "Convert string to uppercase",
+      "category": "string",
+      "params_schema": {}
+    },
+    {
+      "name": "lowercase",
+      "description": "Convert string to lowercase",
+      "category": "string",
+      "params_schema": {}
+    },
+    {
+      "name": "cast_int",
+      "description": "Parse string/numeric value to integer",
+      "category": "numeric",
+      "params_schema": {}
+    },
+    {
+      "name": "cast_decimal_to_cents",
+      "description": "Convert decimal dollar/euro string to integer cents (e.g. '15.50' -> 1550)",
+      "category": "numeric",
+      "params_schema": {}
+    },
+    {
+      "name": "parse_date",
+      "description": "Parse date string into ISO-8601 YYYY-MM-DD",
+      "category": "datetime",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "input_format": { "type": "string", "description": "strftime format string like %d/%m/%Y" }
+        },
+        "required": ["input_format"]
+      }
+    },
+    {
+      "name": "parse_datetime",
+      "description": "Parse datetime string into ISO-8601 UTC string",
+      "category": "datetime",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "input_format": { "type": "string", "description": "strftime format string like %Y-%m-%d %H:%M:%S" }
+        },
+        "required": ["input_format"]
+      }
+    },
+    {
+      "name": "split_name",
+      "description": "Extract first or last name from full name string",
+      "category": "string",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "part": { "type": "string", "enum": ["first", "last"], "description": "Name component to extract" }
+        },
+        "required": ["part"]
+      }
+    },
+    {
+      "name": "default_value",
+      "description": "Provide a default fallback value if source field is empty or missing",
+      "category": "fallback",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "value": { "description": "Literal fallback value" }
+        },
+        "required": ["value"]
+      }
+    },
+    {
+      "name": "enum_map",
+      "description": "Map input keys to target enum values with error or fallback behavior",
+      "category": "mapping",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "mapping": { "type": "object", "description": "Dictionary of source key to target key" },
+          "on_unmapped": { "type": "string", "enum": ["error", "default"], "default": "error" },
+          "default": { "type": "string", "description": "Default value if on_unmapped is default" }
+        },
+        "required": ["mapping"]
+      }
+    },
+    {
+      "name": "normalize_phone_e164",
+      "description": "Normalize free-form phone number into E.164 international format",
+      "category": "string",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "default_country": { "type": "string", "default": "US", "description": "ISO-2 default country prefix" }
+        }
+      }
+    },
+    {
+      "name": "concat",
+      "description": "Concatenate multiple source fields with a separator",
+      "category": "composite",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "fields": { "type": "array", "items": { "type": "string" }, "description": "List of source field names" },
+          "separator": { "type": "string", "default": " ", "description": "Joining separator" }
+        },
+        "required": ["fields"]
+      }
+    }
+  ]
+}

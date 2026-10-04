@@ -1,0 +1,85 @@
+{
+  "name": "customers",
+  "description": "Modern unified customer table in target store",
+  "primary_key": ["customer_id"],
+  "unique_constraints": [["email"], ["source_key"]],
+  "fields": [
+    {
+      "name": "customer_id",
+      "type": "string",
+      "nullable": false,
+      "description": "Primary unique customer ID"
+    },
+    {
+      "name": "first_name",
+      "type": "string",
+      "nullable": false,
+      "description": "Customer first name"
+    },
+    {
+      "name": "last_name",
+      "type": "string",
+      "nullable": false,
+      "description": "Customer last name"
+    },
+    {
+      "name": "email",
+      "type": "string",
+      "nullable": false,
+      "format": "email",
+      "unique": true,
+      "description": "Normalized valid email address"
+    },
+    {
+      "name": "phone_e164",
+      "type": "string",
+      "nullable": true,
+      "format": "e164",
+      "description": "Normalized E.164 phone number"
+    },
+    {
+      "name": "date_of_birth",
+      "type": "string",
+      "nullable": true,
+      "format": "date",
+      "description": "ISO-8601 date string (YYYY-MM-DD)"
+    },
+    {
+      "name": "country",
+      "type": "string",
+      "nullable": false,
+      "format": "iso-2",
+      "description": "Uppercase 2-letter ISO country code"
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "nullable": false,
+      "enum": ["ACTIVE", "INACTIVE", "PENDING"],
+      "description": "Standardized customer account status"
+    },
+    {
+      "name": "created_at",
+      "type": "string",
+      "nullable": false,
+      "format": "date-time",
+      "description": "ISO-8601 creation datetime string"
+    },
+    {
+      "name": "credit_limit_cents",
+      "type": "integer",
+      "nullable": false,
+      "default": 0,
+      "min": 0,
+      "description": "Credit limit in cents (integer >= 0)"
+    },
+    {
+      "name": "loyalty_tier",
+      "type": "string",
+      "nullable": false,
+      "enum": ["BRONZE", "SILVER", "GOLD", "PLATINUM"],
+      "default": "BRONZE",
+      "description": "Loyalty tier enum. No source equivalent; requires clarification or default."
+    }
+  ]
+}

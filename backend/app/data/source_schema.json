@@ -1,0 +1,67 @@
+{
+  "name": "legacy_customers",
+  "description": "Legacy system customer export table",
+  "primary_key": ["cust_id"],
+  "fields": [
+    {
+      "name": "cust_id",
+      "type": "string",
+      "nullable": false,
+      "description": "Legacy unique customer identifier"
+    },
+    {
+      "name": "full_name",
+      "type": "string",
+      "nullable": false,
+      "description": "Customer full name (e.g. 'John Doe')"
+    },
+    {
+      "name": "email_addr",
+      "type": "string",
+      "nullable": false,
+      "description": "Customer email address"
+    },
+    {
+      "name": "phone",
+      "type": "string",
+      "nullable": true,
+      "description": "Free-form phone number"
+    },
+    {
+      "name": "dob",
+      "type": "string",
+      "nullable": true,
+      "description": "Date of birth in DD/MM/YYYY format"
+    },
+    {
+      "name": "country_code",
+      "type": "string",
+      "nullable": true,
+      "description": "2-letter country code, mixed case"
+    },
+    {
+      "name": "status_flag",
+      "type": "string",
+      "nullable": true,
+      "description": "Status code: 'A' (Active), 'I' (Inactive), 'P' (Pending), or empty"
+    },
+    {
+      "name": "signup_ts",
+      "type": "string",
+      "nullable": false,
+      "description": "Registration timestamp in format YYYY-MM-DD HH:MM:SS"
+    },
+    {
+      "name": "credit_limit",
+      "type": "string",
+      "nullable": true,
+      "description": "Numeric credit limit string (e.g. '1500.50')"
+    },
+    {
+      "name": "legacy_notes",
+      "type": "string",
+      "nullable": true,
+      "description": "Unstructured legacy notes (no target equivalent)"
+    }
+  ]
+}
