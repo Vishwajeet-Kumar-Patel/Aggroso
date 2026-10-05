@@ -1,29 +1,30 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  BrainCircuit,
-  Sparkles,
-  AlertTriangle,
-  HelpCircle,
-  CheckCircle2,
-  RefreshCw,
-  Cpu,
-  Layers,
-  FileCheck,
-} from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { api } from '../api/client';
 import type { ClarificationAnswer } from '../types';
+import { usePageTitle } from '../hooks/usePageTitle';
+
+const SeverityBadge: React.FC<{ severity: string }> = ({ severity }) => {
+  const cls =
+    severity === 'high'   ? 'badge-danger'   :
+    severity === 'medium' ? 'badge-warning'  :
+                            'badge-neutral';
+  return <span className={cls}>{severity}</span>;
+};
 
 export const ProposalPage: React.FC = () => {
+  usePageTitle('Proposal');
+
   const queryClient = useQueryClient();
   const [useFallback, setUseFallback] = useState(false);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [revisionSuccessMsg, setRevisionSuccessMsg] = useState<string | null>(null);
+  const [revisionMsg, setRevisionMsg] = useState<string | null>(null);
 
   const { data: proposal, isLoading, refetch } = useQuery({
     queryKey: ['agentProposal'],
     queryFn: () => api.proposePlan(useFallback),
-    staleTime: Infinity, // Keep proposal in memory
+    staleTime: Infinity,
   });
 
   const reviseMutation = useMutation({
@@ -32,8 +33,8 @@ export const ProposalPage: React.FC = () => {
     onSuccess: (data) => {
       queryClient.setQueryData(['agentProposal'], data);
       queryClient.invalidateQueries({ queryKey: ['activePlan'] });
-      setRevisionSuccessMsg('Proposal revised! A new immutable plan version has been created in draft status.');
-      setTimeout(() => setRevisionSuccessMsg(null), 6000);
+      setRevisionMsg('Proposal revised. A new plan version has been created in draft status.');
+      setTimeout(() => setRevisionMsg(null), 6000);
     },
   });
 
@@ -50,199 +51,277 @@ export const ProposalPage: React.FC = () => {
     reviseMutation.mutate(answersList);
   };
 
-  const getSeverityBadge = (severity: string) => {
-    switch (severity) {
-      case 'high':
-        return 'bg-rose-500/20 text-rose-300 border-rose-500/40';
-      case 'medium':
-        return 'bg-amber-500/20 text-amber-300 border-amber-500/40';
-      case 'low':
-      default:
-        return 'bg-sky-500/20 text-sky-300 border-sky-500/40';
-    }
-  };
-
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-12">
-      {/* Header & Controls */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {/* Page header */}
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '16px',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+        }}
+      >
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
-            <BrainCircuit className="w-6 h-6 text-indigo-400" />
-            AI Migration Proposal & Clarifications
-          </h1>
-          <p className="text-sm text-slate-400 mt-1">
-            The AI agent inspects source schemas, dirty samples, and whitelist rules to propose deterministic mappings.
+          <h1 className="page-title">Proposal</h1>
+          <p className="page-subtitle">
+            The agent inspects source schemas and sample data to propose field
+            mappings and transformation rules.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-xs text-slate-300 bg-slate-900/80 px-3 py-2 rounded-lg border border-slate-800 cursor-pointer">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '0.875rem',
+              color: 'var(--color-muted)',
+              cursor: 'pointer',
+            }}
+          >
             <input
               type="checkbox"
               checked={useFallback}
               onChange={(e) => setUseFallback(e.target.checked)}
-              className="rounded bg-slate-800 border-slate-700 text-indigo-500 focus:ring-0"
+              aria-label="Use deterministic fallback agent instead of LLM"
             />
-            <span>Deterministic Fallback Mode</span>
+            Deterministic fallback
           </label>
 
           <button
             onClick={() => refetch()}
             disabled={isLoading}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg shadow-lg shadow-indigo-600/30 transition-all disabled:opacity-50"
+            className="btn btn-primary"
+            aria-busy={isLoading}
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-            {isLoading ? 'Analyzing...' : 'Re-run Agent Proposal'}
+            <RefreshCw
+              size={14}
+              aria-hidden="true"
+              className={isLoading ? 'spin' : ''}
+            />
+            {isLoading ? 'Running analysis…' : 'Run agent proposal'}
           </button>
         </div>
       </div>
 
-      {revisionSuccessMsg && (
-        <div className="p-4 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          {revisionSuccessMsg}
+      {revisionMsg && (
+        <div className="banner-success" role="status" aria-live="polite">
+          {revisionMsg}
         </div>
       )}
 
-      {/* Agent Status Badge */}
+      {/* Agent source tag */}
       {proposal && (
-        <div className="glass-panel p-4 rounded-xl border border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="text-slate-400">Agent Engine Source:</span>
-            <span
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-semibold ${proposal.source === 'llm'
-                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
-                  : 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
-                }`}
-            >
-              <Cpu className="w-3.5 h-3.5" />
-              {proposal.source === 'llm' ? 'Anthropic Claude 3.5 Sonnet' : 'Deterministic Heuristic Fallback Agent'}
+        <div
+          className="panel"
+          style={{
+            padding: '10px 16px',
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '12px',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontSize: '0.875rem',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ color: 'var(--color-muted)' }}>Source:</span>
+            <span className={proposal.source === 'llm' ? 'badge-accent' : 'badge-neutral'}>
+              {proposal.source === 'llm' ? 'LLM' : 'Fallback'}
+            </span>
+            <span style={{ color: 'var(--color-muted)' }}>
+              {proposal.source === 'llm'
+                ? 'Anthropic Claude'
+                : 'Deterministic heuristic agent'}
             </span>
           </div>
-          <div className="text-slate-400">
-            Read-only Tools Executed: <span className="text-slate-200 font-mono">{proposal.tools_called.length}</span> (Isolation Enforced)
+          <div style={{ color: 'var(--color-muted)', fontSize: '0.8125rem' }}>
+            Tools called: <strong style={{ color: 'var(--color-text)' }}>{proposal.tools_called.length}</strong>
+            {' '}(read-only, isolation enforced)
           </div>
         </div>
       )}
 
-      {/* Proposal Summary Card */}
+      {/* Proposed migration strategy */}
       {proposal && (
-        <div className="glass-panel p-5 rounded-xl border border-slate-800">
-          <h2 className="text-sm font-semibold text-white uppercase font-mono tracking-wider text-indigo-400 mb-2">
-            Proposed Migration Strategy
-          </h2>
-          <p className="text-sm text-slate-300 mb-4">{proposal.proposed_migration_plan.summary}</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            {proposal.proposed_migration_plan.ordered_steps.map((step, idx) => (
-              <div
-                key={idx}
-                className="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80 text-xs text-slate-300 flex items-center gap-2"
-              >
-                <span className="w-5 h-5 rounded-full bg-indigo-600/30 text-indigo-400 flex items-center justify-center font-mono text-[10px] shrink-0">
-                  {idx + 1}
-                </span>
-                <span>{step}</span>
-              </div>
-            ))}
+        <section className="panel" aria-label="Proposed migration strategy">
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--color-border)' }}>
+            <h2 className="section-title" style={{ marginBottom: 0 }}>
+              Proposed migration strategy
+            </h2>
           </div>
-        </div>
+          <div style={{ padding: '16px' }}>
+            <p style={{ fontSize: '0.9375rem', color: 'var(--color-text)', marginBottom: '16px', lineHeight: '1.7' }}>
+              {proposal.proposed_migration_plan.summary}
+            </p>
+            <ol
+              style={{
+                listStyle: 'none',
+                margin: 0,
+                padding: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px',
+              }}
+            >
+              {proposal.proposed_migration_plan.ordered_steps.map((step, idx) => (
+                <li
+                  key={idx}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '10px',
+                    fontSize: '0.875rem',
+                    color: 'var(--color-text)',
+                    padding: '8px',
+                    background: 'var(--color-surface)',
+                    borderRadius: 'var(--radius)',
+                    border: '1px solid var(--color-border)',
+                  }}
+                >
+                  <span
+                    style={{
+                      minWidth: '20px',
+                      height: '20px',
+                      background: 'var(--color-accent-soft)',
+                      color: 'var(--color-accent)',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      flexShrink: 0,
+                    }}
+                    aria-hidden="true"
+                  >
+                    {idx + 1}
+                  </span>
+                  {step}
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
       )}
 
-      {/* Field Mappings Table */}
-      <div className="glass-panel p-5 rounded-xl border border-slate-800">
-        <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
-          <Layers className="w-5 h-5 text-indigo-400" />
-          Proposed Field Mappings & Rule Pipelines
-        </h2>
+      {/* Field mappings table */}
+      <section className="panel" aria-label="Proposed field mappings">
+        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--color-border)' }}>
+          <h2 className="section-title" style={{ marginBottom: 0 }}>
+            Field mappings and transformation rules
+          </h2>
+        </div>
 
-        <div className="overflow-x-auto rounded-lg border border-slate-800">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-900/90 text-slate-400 font-mono text-[11px] uppercase border-b border-slate-800">
+        <div style={{ overflowX: 'auto', maxWidth: '100%' }}>
+          <table className="data-table data-table-responsive" aria-label="Field mappings">
+            <thead>
               <tr>
-                <th className="px-3 py-2.5">Target Field</th>
-                <th className="px-3 py-2.5">Source Fields</th>
-                <th className="px-3 py-2.5">Transformation Rules</th>
-                <th className="px-3 py-2.5">Confidence</th>
-                <th className="px-3 py-2.5">Agent Rationale</th>
+                <th>Target field</th>
+                <th>Source fields</th>
+                <th>Transformation rules</th>
+                <th>Confidence</th>
+                <th>Rationale</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 bg-slate-950/40">
+            <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-8 text-slate-400 font-sans">
-                    Generating mapping proposal...
+                  <td colSpan={5} style={{ textAlign: 'center', padding: '32px', color: 'var(--color-muted)' }}>
+                    Running proposal analysis…
                   </td>
                 </tr>
               ) : (
                 proposal?.field_mappings.map((m) => (
-                  <tr key={m.target_field} className="hover:bg-slate-800/30 transition-colors">
-                    <td className="px-3 py-3 font-mono font-semibold text-emerald-300">
-                      {m.target_field}
+                  <tr key={m.target_field}>
+                    <td data-label="Target field">
+                      <code style={{ fontWeight: 600, color: 'var(--color-success)' }}>{m.target_field}</code>
                     </td>
-                    <td className="px-3 py-3 font-mono text-sky-300">
-                      {m.source_fields.length > 0 ? m.source_fields.join(', ') : <span className="text-slate-500 italic">None (Default)</span>}
+                    <td data-label="Source fields">
+                      {m.source_fields.length > 0
+                        ? <code style={{ color: 'var(--color-accent)' }}>{m.source_fields.join(', ')}</code>
+                        : <span style={{ color: 'var(--color-muted)', fontStyle: 'italic' }}>None (default)</span>
+                      }
                     </td>
-                    <td className="px-3 py-3">
-                      <div className="flex flex-wrap gap-1.5">
+                    <td data-label="Transformation rules">
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                         {m.transformations.map((t, tidx) => (
-                          <span
+                          <code
                             key={tidx}
-                            className="bg-indigo-950/60 text-indigo-300 border border-indigo-800/40 px-2 py-0.5 rounded text-[10px] font-mono"
+                            style={{
+                              fontSize: '0.75rem',
+                              background: 'var(--color-accent-soft)',
+                              color: 'var(--color-accent)',
+                              border: '1px solid var(--color-accent)',
+                              borderRadius: '2px',
+                              padding: '1px 5px',
+                            }}
                           >
                             {t.rule}
-                            {t.params && Object.keys(t.params).length > 0 && `(${JSON.stringify(t.params)})`}
-                          </span>
+                            {t.params && Object.keys(t.params).length > 0 && ` (${JSON.stringify(t.params)})`}
+                          </code>
                         ))}
                       </div>
                     </td>
-                    <td className="px-3 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 h-2 bg-slate-800 rounded-full overflow-hidden">
+                    <td data-label="Confidence">
+                      <div className="confidence-bar">
+                        <div className="confidence-bar-track" aria-hidden="true">
                           <div
-                            className="h-full bg-indigo-500 rounded-full"
+                            className="confidence-bar-fill"
                             style={{ width: `${Math.round(m.confidence * 100)}%` }}
                           />
                         </div>
-                        <span className="font-mono text-[10px] text-slate-300">
+                        <span style={{ fontSize: '0.8125rem', fontVariantNumeric: 'tabular-nums' }}>
                           {Math.round(m.confidence * 100)}%
                         </span>
                       </div>
                     </td>
-                    <td className="px-3 py-3 text-slate-300 text-[11px] max-w-xs">{m.rationale}</td>
+                    <td data-label="Rationale" style={{ fontSize: '0.8125rem', color: 'var(--color-muted)', maxWidth: '240px' }}>
+                      {m.rationale}
+                    </td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
 
-      {/* Risks & Incompatible Fields Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Risks and incompatible fields */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: '16px',
+        }}
+      >
         {/* Risks */}
-        <div className="glass-panel p-5 rounded-xl border border-slate-800">
-          <h2 className="text-base font-bold text-white mb-3 flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-amber-400" />
-            Detected Data & Schema Risks
-          </h2>
-          <div className="space-y-2.5">
+        <section className="panel" aria-label="Detected risks">
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--color-border)' }}>
+            <h2 className="section-title" style={{ marginBottom: 0 }}>Detected risks</h2>
+          </div>
+          <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {proposal?.risks.map((risk, idx) => (
               <div
                 key={idx}
-                className="bg-slate-900/60 p-3 rounded-lg border border-slate-800 flex items-start gap-2.5"
+                style={{
+                  display: 'flex',
+                  gap: '10px',
+                  alignItems: 'flex-start',
+                  padding: '10px',
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius)',
+                }}
               >
-                <span
-                  className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase font-bold border ${getSeverityBadge(
-                    risk.severity
-                  )}`}
-                >
-                  {risk.severity}
-                </span>
-                <div className="text-xs">
-                  <p className="text-slate-200">{risk.description}</p>
+                <SeverityBadge severity={risk.severity} />
+                <div style={{ fontSize: '0.8125rem' }}>
+                  <p style={{ margin: '0 0 2px', color: 'var(--color-text)' }}>{risk.description}</p>
                   {risk.affected_fields.length > 0 && (
-                    <span className="text-[10px] font-mono text-slate-400 mt-1 block">
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-muted)' }}>
                       Affected: {risk.affected_fields.join(', ')}
                     </span>
                   )}
@@ -250,65 +329,87 @@ export const ProposalPage: React.FC = () => {
               </div>
             ))}
           </div>
-        </div>
+        </section>
 
-        {/* Incompatible / Missing Fields */}
-        <div className="glass-panel p-5 rounded-xl border border-slate-800">
-          <h2 className="text-base font-bold text-white mb-3 flex items-center gap-2">
-            <HelpCircle className="w-5 h-5 text-sky-400" />
-            Incompatible & Unmapped Fields
-          </h2>
-          <div className="space-y-2.5">
+        {/* Incompatible / missing fields */}
+        <section className="panel" aria-label="Incompatible and unmapped fields">
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--color-border)' }}>
+            <h2 className="section-title" style={{ marginBottom: 0 }}>Incompatible and unmapped fields</h2>
+          </div>
+          <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {proposal?.incompatible_or_missing_fields.map((field, idx) => (
               <div
                 key={idx}
-                className="bg-slate-900/60 p-3 rounded-lg border border-slate-800 text-xs space-y-1"
+                style={{
+                  padding: '10px',
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius)',
+                  fontSize: '0.8125rem',
+                }}
               >
-                <div className="font-mono font-semibold text-sky-300">{field.field_name}</div>
-                <p className="text-slate-300 text-[11px]">{field.description}</p>
-                <div className="text-[11px] text-amber-300/90 font-medium">
+                <div style={{ fontWeight: 600, color: 'var(--color-accent)', marginBottom: '3px' }}>
+                  {field.field_name}
+                </div>
+                <p style={{ margin: '0 0 4px', color: 'var(--color-text)' }}>{field.description}</p>
+                <div style={{ color: 'var(--color-warning)', fontSize: '0.75rem' }}>
                   Suggestion: {field.suggestion}
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </section>
       </div>
 
-      {/* Clarification Q&A Form */}
+      {/* Clarification Q&A form */}
       {proposal && proposal.clarification_questions.length > 0 && (
-        <div className="glass-panel p-5 rounded-xl border border-indigo-900/40 bg-gradient-to-b from-indigo-950/20 to-slate-950/40">
-          <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-indigo-400" />
-            Human-in-the-Loop Clarification Questions
-          </h2>
-          <p className="text-xs text-slate-400 mb-5">
-            Answer the agent's questions below. Submitting answers will revise the proposal and create a new immutable plan version.
-          </p>
+        <section className="panel" aria-label="Clarification questions">
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--color-border)' }}>
+            <h2 className="section-title" style={{ marginBottom: '2px' }}>Clarification questions</h2>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--color-muted)', margin: 0 }}>
+              Answer the questions below to revise the proposal and create a new plan version.
+            </p>
+          </div>
 
-          <form onSubmit={handleReviseSubmit} className="space-y-4">
+          <form onSubmit={handleReviseSubmit} style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {proposal.clarification_questions.map((q) => (
-              <div key={q.id} className="bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-xs">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-mono font-bold text-indigo-400">{q.id}</span>
-                  <span className="text-[10px] font-mono bg-slate-800 text-slate-400 px-2 py-0.5 rounded">
+              <div
+                key={q.id}
+                style={{
+                  padding: '14px',
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius)',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'baseline',
+                    marginBottom: '6px',
+                    flexWrap: 'wrap',
+                    gap: '6px',
+                  }}
+                >
+                  <code style={{ fontSize: '0.8125rem', color: 'var(--color-accent)' }}>{q.id}</code>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-muted)' }}>
                     Affects: {q.affects_field}
                   </span>
                 </div>
-                <p className="text-slate-200 font-medium text-sm mb-3">{q.question}</p>
+                <p style={{ fontWeight: 500, fontSize: '0.9375rem', color: 'var(--color-text)', margin: '0 0 10px' }}>
+                  {q.question}
+                </p>
 
-                {/* Suggested Options */}
                 {q.suggested_options.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-3">
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
                     {q.suggested_options.map((opt) => (
                       <button
                         type="button"
                         key={opt}
                         onClick={() => handleAnswerChange(q.id, opt)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${(answers[q.id] || q.user_answer) === opt
-                            ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
-                            : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
-                          }`}
+                        className={`btn btn-sm ${(answers[q.id] || q.user_answer) === opt ? 'btn-primary' : 'btn-secondary'}`}
+                        aria-pressed={(answers[q.id] || q.user_answer) === opt}
                       >
                         {opt}
                       </button>
@@ -316,29 +417,33 @@ export const ProposalPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Custom Answer Input */}
+                <label htmlFor={`q-${q.id}`} className="label">
+                  Custom answer
+                </label>
                 <input
+                  id={`q-${q.id}`}
                   type="text"
-                  placeholder="Or write custom answer..."
+                  placeholder="Write a custom answer…"
                   value={answers[q.id] || ''}
                   onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="input"
+                  aria-label={`Custom answer for question ${q.id}`}
                 />
               </div>
             ))}
 
-            <div className="flex justify-end pt-2">
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button
                 type="submit"
                 disabled={reviseMutation.isPending}
-                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white text-xs font-bold rounded-lg shadow-lg shadow-indigo-600/30 transition-all disabled:opacity-50"
+                className="btn btn-primary"
+                aria-busy={reviseMutation.isPending}
               >
-                <FileCheck className="w-4 h-4" />
-                {reviseMutation.isPending ? 'Revising Proposal...' : 'Revise Proposal (Creates New Version)'}
+                {reviseMutation.isPending ? 'Revising…' : 'Revise proposal and create new version'}
               </button>
             </div>
           </form>
-        </div>
+        </section>
       )}
     </div>
   );

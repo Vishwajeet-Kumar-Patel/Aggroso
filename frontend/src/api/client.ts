@@ -16,7 +16,7 @@ import type {
   TransformRegistry,
 } from '../types';
 
-const API_BASE = '/api';
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
 
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -43,7 +43,7 @@ export const api = {
     ),
   getScenarios: () =>
     fetch(`${API_BASE}/sample/scenarios`).then(
-      handleResponse<{ scenarios: Array<{ name: string; record_count: number; description: string; expected_clean_rate: string }> }>
+      handleResponse<Array<{ name: string; record_count: number; description: string; expected_clean_rate?: string }>>
     ),
   loadScenario: (scenarioName: string) =>
     fetch(`${API_BASE}/sample/load`, {

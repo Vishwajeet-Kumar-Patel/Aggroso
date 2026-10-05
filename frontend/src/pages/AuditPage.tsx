@@ -14,8 +14,11 @@ import {
   Cpu,
 } from 'lucide-react';
 import { api } from '../api/client';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 export const AuditPage: React.FC = () => {
+  usePageTitle('Audit Log');
+
   const [selectedEventType, setSelectedEventType] = useState<string>('');
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
 
@@ -25,85 +28,94 @@ export const AuditPage: React.FC = () => {
     refetchInterval: 5000,
   });
 
-  const getEventIcon = (type: string) => {
+  const getEventBadge = (type: string) => {
     switch (type) {
-      case 'agent_proposal':
-        return <BrainIcon />;
       case 'approved':
-        return <CheckCircle2 className="w-4 h-4 text-emerald-400" />;
-      case 'rejected':
-        return <AlertOctagon className="w-4 h-4 text-rose-400" />;
       case 'executed':
-        return <PlayCircle className="w-4 h-4 text-emerald-400" />;
-      case 'retried':
-        return <RotateCcw className="w-4 h-4 text-amber-400" />;
+        return 'badge-success';
+      case 'rejected':
       case 'rolled_back':
-        return <RotateCcw className="w-4 h-4 text-rose-400" />;
+      case 'error':
+        return 'badge-danger';
+      case 'retried':
+        return 'badge-warning';
+      case 'agent_proposal':
       case 'dry_run':
-        return <ShieldCheck className="w-4 h-4 text-sky-400" />;
       case 'reconciled':
-        return <CheckCircle2 className="w-4 h-4 text-indigo-400" />;
       case 'plan_created':
       case 'plan_edited':
-        return <FileCode className="w-4 h-4 text-indigo-400" />;
-      case 'error':
-        return <AlertOctagon className="w-4 h-4 text-rose-400" />;
       default:
-        return <History className="w-4 h-4 text-slate-400" />;
+        return 'badge-accent';
     }
   };
 
-  const getEventColor = (type: string) => {
+  const getEventIcon = (type: string) => {
     switch (type) {
-      case 'approved':
-      case 'executed':
-        return 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300';
-      case 'rejected':
-      case 'rolled_back':
-      case 'error':
-        return 'bg-rose-500/10 border-rose-500/30 text-rose-300';
-      case 'retried':
-        return 'bg-amber-500/10 border-amber-500/30 text-amber-300';
       case 'agent_proposal':
+        return <Cpu size={15} style={{ color: 'var(--color-accent)' }} />;
+      case 'approved':
+        return <CheckCircle2 size={15} style={{ color: 'var(--color-success)' }} />;
+      case 'rejected':
+        return <AlertOctagon size={15} style={{ color: 'var(--color-danger)' }} />;
+      case 'executed':
+        return <PlayCircle size={15} style={{ color: 'var(--color-success)' }} />;
+      case 'retried':
+        return <RotateCcw size={15} style={{ color: 'var(--color-warning)' }} />;
+      case 'rolled_back':
+        return <RotateCcw size={15} style={{ color: 'var(--color-danger)' }} />;
       case 'dry_run':
+        return <ShieldCheck size={15} style={{ color: 'var(--color-accent)' }} />;
       case 'reconciled':
+        return <CheckCircle2 size={15} style={{ color: 'var(--color-accent)' }} />;
       case 'plan_created':
       case 'plan_edited':
+        return <FileCode size={15} style={{ color: 'var(--color-accent)' }} />;
+      case 'error':
+        return <AlertOctagon size={15} style={{ color: 'var(--color-danger)' }} />;
       default:
-        return 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300';
+        return <History size={15} style={{ color: 'var(--color-muted)' }} />;
     }
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-12">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
-            <History className="w-6 h-6 text-indigo-400" />
-            Append-Only Audit Trail & Compliance Log
-          </h1>
-          <p className="text-sm text-slate-400 mt-1">
-            Complete cryptographic and provenance record of every proposal, plan revision, approval, execution, and rollback.
+          <h1 className="page-title">Append-Only Audit Trail & Compliance Log</h1>
+          <p className="page-subtitle">
+            Cryptographic and provenance record of every proposal, plan revision, approval, execution, and rollback.
           </p>
         </div>
 
         {/* Immutability Guarantee Pill */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold">
-          <ShieldCheck className="w-4 h-4 text-emerald-400" />
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '6px',
+          padding: '4px 10px',
+          borderRadius: 'var(--radius)',
+          background: 'var(--color-success-soft)',
+          border: '1px solid var(--color-success)',
+          color: 'var(--color-success)',
+          fontSize: '0.75rem',
+          fontWeight: 600,
+        }}>
+          <ShieldCheck size={14} />
           Strictly Append-Only (Mutations Blocked)
         </div>
       </div>
 
       {/* Filter Bar */}
-      <div className="glass-panel p-4 rounded-xl border border-slate-800 flex flex-wrap items-center justify-between gap-4 text-xs">
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-slate-400" />
-          <span className="text-slate-400">Filter Event Type:</span>
+      <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Filter size={15} style={{ color: 'var(--color-muted)' }} />
+          <span style={{ fontSize: '0.8125rem', color: 'var(--color-muted)', fontWeight: 500 }}>Filter Event Type:</span>
           <select
             value={selectedEventType}
             onChange={(e) => setSelectedEventType(e.target.value)}
-            className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-indigo-500"
+            className="select"
+            style={{ padding: '4px 8px', fontSize: '0.8125rem' }}
           >
             <option value="">All Event Types ({events?.length || 0})</option>
             <option value="agent_proposal">agent_proposal</option>
@@ -120,17 +132,19 @@ export const AuditPage: React.FC = () => {
           </select>
         </div>
 
-        <div className="text-slate-400">
-          Showing <span className="text-white font-mono font-bold">{events?.length || 0}</span> recorded events
+        <div style={{ fontSize: '0.8125rem', color: 'var(--color-muted)' }}>
+          Showing <strong>{events?.length || 0}</strong> recorded events
         </div>
       </div>
 
       {/* Timeline */}
-      <div className="space-y-4">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {isLoading ? (
-          <div className="text-center py-12 text-slate-400 text-sm">Loading audit events...</div>
+          <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--color-muted)', fontSize: '0.875rem' }}>
+            Loading audit events...
+          </div>
         ) : events?.length === 0 ? (
-          <div className="glass-panel p-8 rounded-xl border border-slate-800 text-center text-slate-400 text-sm">
+          <div className="card" style={{ textAlign: 'center', padding: '32px', color: 'var(--color-muted)', fontSize: '0.875rem' }}>
             No audit events found. Run a proposal, plan approval, or migration to generate logs.
           </div>
         ) : (
@@ -139,37 +153,44 @@ export const AuditPage: React.FC = () => {
             return (
               <div
                 key={evt.id}
-                className="glass-panel rounded-xl border border-slate-800 p-4 space-y-3 hover:border-slate-700 transition-colors"
+                className="card"
+                style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-lg bg-slate-900 border border-slate-800">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: 'var(--radius)',
+                      background: 'var(--color-surface)',
+                      border: '1px solid var(--color-border)',
+                    }}>
                       {getEventIcon(evt.event_type)}
                     </div>
-                    <div>
-                      <span
-                        className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-mono font-bold border ${getEventColor(
-                          evt.event_type
-                        )}`}
-                      >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span className={getEventBadge(evt.event_type)}>
                         {evt.event_type}
                       </span>
-                      <span className="text-xs text-slate-400 ml-2 font-mono">
-                        Actor: <span className="text-slate-200">{evt.actor}</span>
+                      <span style={{ fontSize: '0.8125rem', color: 'var(--color-muted)' }}>
+                        Actor: <strong style={{ color: 'var(--color-text)' }}>{evt.actor}</strong>
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 text-xs text-slate-400 font-mono">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '0.8125rem', color: 'var(--color-muted)' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Clock size={13} />
                       {new Date(evt.timestamp).toLocaleString()}
                     </span>
                     <button
                       onClick={() => setExpandedEventId(isExpanded ? null : evt.id)}
-                      className="text-indigo-400 hover:text-indigo-300 font-semibold text-xs flex items-center gap-1"
+                      className="btn btn-tertiary btn-sm"
+                      style={{ padding: '2px 6px' }}
                     >
-                      <Code2 className="w-3.5 h-3.5" />
+                      <Code2 size={13} />
                       {isExpanded ? 'Hide Payload' : 'View Payload'}
                     </button>
                   </div>
@@ -177,14 +198,14 @@ export const AuditPage: React.FC = () => {
 
                 {/* Provenance Tags */}
                 {(evt.plan_version_id || evt.run_id) && (
-                  <div className="flex flex-wrap gap-2 text-[10px] font-mono text-slate-400 pt-1">
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', fontSize: '0.75rem' }}>
                     {evt.plan_version_id && (
-                      <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                      <span className="badge-neutral">
                         Plan Version ID: {evt.plan_version_id}
                       </span>
                     )}
                     {evt.run_id && (
-                      <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                      <span className="badge-neutral">
                         Run ID: {evt.run_id}
                       </span>
                     )}
@@ -193,11 +214,11 @@ export const AuditPage: React.FC = () => {
 
                 {/* JSON Payload Inspector */}
                 {isExpanded && (
-                  <div className="pt-2 border-t border-slate-800">
-                    <div className="text-[10px] font-mono text-slate-400 uppercase mb-1">
-                      Immutable Event Payload JSON:
+                  <div style={{ paddingTop: '8px', borderTop: '1px solid var(--color-border)' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-muted)', marginBottom: '4px' }}>
+                      EVENT PAYLOAD JSON:
                     </div>
-                    <pre className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs font-mono text-sky-300 overflow-x-auto">
+                    <pre className="code-block" style={{ margin: 0 }}>
                       {JSON.stringify(evt.payload, null, 2)}
                     </pre>
                   </div>
@@ -210,7 +231,3 @@ export const AuditPage: React.FC = () => {
     </div>
   );
 };
-
-const BrainIcon: React.FC = () => (
-  <Cpu className="w-4 h-4 text-purple-400" />
-);

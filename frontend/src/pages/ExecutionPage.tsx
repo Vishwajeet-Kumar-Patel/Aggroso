@@ -11,11 +11,15 @@ import {
   Activity,
   Bug,
   Database,
+  RefreshCw,
 } from 'lucide-react';
 import { api } from '../api/client';
 import type { MigrationRun } from '../types';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 export const ExecutionPage: React.FC = () => {
+  usePageTitle('Execution');
+
   const queryClient = useQueryClient();
 
   const [simulateFaultIndex, setSimulateFaultIndex] = useState<string>('');
@@ -83,80 +87,69 @@ export const ExecutionPage: React.FC = () => {
   });
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-12">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
-          <PlayCircle className="w-6 h-6 text-indigo-400" />
-          Migration Execution, Rollback & Reconciliation
-        </h1>
-        <p className="text-sm text-slate-400 mt-1">
-          Execute accepted records into the mock target store. Protected by server-side approval gates and idempotency keys.
+        <h1 className="page-title">Migration Execution & Reconciliation</h1>
+        <p className="page-subtitle">
+          Execute accepted records into the target store with server-side approval gates and idempotency protection.
         </p>
       </div>
 
       {/* Approval Gate Status Banner */}
-      <div
-        className={`p-5 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4 ${
-          isApproved
-            ? 'bg-emerald-950/20 border-emerald-500/40 text-emerald-300'
-            : 'bg-rose-950/20 border-rose-500/40 text-rose-300'
-        }`}
-      >
-        <div className="flex items-center gap-3">
-          <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-              isApproved ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
-            }`}
-          >
-            {isApproved ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
-          </div>
-          <div>
-            <div className="font-bold text-sm sm:text-base">
-              {isApproved
-                ? `Approval Gate Unlocked: Plan Version v${activeVersion?.version_num} is Approved`
-                : `Approval Gate Locked: Plan Version v${activeVersion?.version_num || 1} (${activeVersion?.status || 'draft'})`}
+      <div className={isApproved ? 'banner-success' : 'banner-warning'}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+            <div style={{ marginTop: '2px' }}>
+              {isApproved ? <Unlock size={18} /> : <Lock size={18} />}
             </div>
-            <div className="text-xs text-slate-300 mt-0.5">
-              {isApproved
-                ? `Approved by ${activeVersion?.approver} on ${new Date(activeVersion?.approved_at!).toLocaleString()} (Hash: ${activeVersion?.content_hash.substring(0, 10)}...)`
-                : 'Execution is strictly blocked with HTTP 403 on the server until a human signs off.'}
+            <div>
+              <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>
+                {isApproved
+                  ? `Approval Gate Unlocked: Plan Version v${activeVersion?.version_num} is Approved`
+                  : `Approval Gate Locked: Plan Version v${activeVersion?.version_num || 1} (${activeVersion?.status || 'draft'})`}
+              </div>
+              <div style={{ fontSize: '0.8125rem', marginTop: '2px', opacity: 0.9 }}>
+                {isApproved
+                  ? `Approved by ${activeVersion?.approver} on ${new Date(activeVersion?.approved_at!).toLocaleString()} (Hash: ${activeVersion?.content_hash.substring(0, 10)}...)`
+                  : 'Execution is blocked on the server until a human signs off in the Plan Editor.'}
+              </div>
             </div>
           </div>
-        </div>
 
-        {!isApproved && (
-          <a
-            href="/plans"
-            className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg transition-all text-center"
-          >
-            Go to Approval Gate
-          </a>
-        )}
+          {!isApproved && (
+            <a
+              href="/plans"
+              className="btn btn-secondary btn-sm"
+            >
+              Go to Approval Gate
+            </a>
+          )}
+        </div>
       </div>
 
       {/* Execution Actions Control Panel */}
-      <div className="glass-panel p-5 rounded-xl border border-slate-800 space-y-5">
-        <h2 className="text-base font-bold text-white flex items-center gap-2">
-          <Activity className="w-5 h-5 text-indigo-400" />
+      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <h2 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+          <Activity size={18} style={{ color: 'var(--color-accent)' }} />
           Execution Control Center & Fault Simulation
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', alignItems: 'end' }}>
           {/* Fault Injection input */}
-          <div className="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
-            <label className="text-xs font-mono text-amber-300 flex items-center gap-1.5 mb-1">
-              <Bug className="w-3.5 h-3.5 text-amber-400" />
+          <div>
+            <label className="label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Bug size={14} style={{ color: 'var(--color-warning)' }} />
               Fault Injection (Mid-run Failure Hook):
             </label>
             <input
               type="number"
-              placeholder="e.g. 5 (Simulate crash at record #5)"
+              placeholder="e.g. 5 (crash at record #5)"
               value={simulateFaultIndex}
               onChange={(e) => setSimulateFaultIndex(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+              className="input"
             />
-            <span className="text-[10px] text-slate-400 mt-1 block">
+            <span style={{ fontSize: '0.75rem', color: 'var(--color-muted)', marginTop: '4px', display: 'block' }}>
               Leave blank for clean run. Use 5 to test transactional retry.
             </span>
           </div>
@@ -166,30 +159,33 @@ export const ExecutionPage: React.FC = () => {
             <button
               onClick={() => setShowConfirmExec(true)}
               disabled={!isApproved || executeMutation.isPending}
-              className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/20 disabled:opacity-40 transition-all flex items-center justify-center gap-2"
+              className="btn btn-primary"
+              style={{ width: '100%', justifyContent: 'center' }}
             >
-              <PlayCircle className="w-4 h-4" />
+              <PlayCircle size={16} />
               {executeMutation.isPending ? 'Executing...' : 'Execute Migration Run'}
             </button>
           </div>
 
           {/* Retry & Rollback buttons */}
-          <div className="flex gap-2">
+          <div style={{ display: 'flex', gap: '8px' }}>
             <button
               onClick={() => retryMutation.mutate()}
               disabled={!latestRun || latestRun.status !== 'failed' || retryMutation.isPending}
-              className="flex-1 py-3 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-amber-600/20 disabled:opacity-30 transition-all flex items-center justify-center gap-1.5"
+              className="btn btn-secondary"
+              style={{ flex: 1, justifyContent: 'center' }}
             >
-              <RotateCcw className={`w-3.5 h-3.5 ${retryMutation.isPending ? 'animate-spin' : ''}`} />
+              <RotateCcw size={14} className={retryMutation.isPending ? 'spin' : ''} />
               Retry Run
             </button>
 
             <button
               onClick={() => setShowConfirmRollback(true)}
               disabled={!latestRun || latestRun.status === 'rolled_back' || rollbackMutation.isPending}
-              className="flex-1 py-3 bg-rose-600/80 hover:bg-rose-600 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-600/20 disabled:opacity-30 transition-all flex items-center justify-center gap-1.5"
+              className="btn btn-danger"
+              style={{ flex: 1, justifyContent: 'center' }}
             >
-              <RotateCcw className="w-3.5 h-3.5" />
+              <RotateCcw size={14} />
               Rollback
             </button>
           </div>
@@ -197,12 +193,12 @@ export const ExecutionPage: React.FC = () => {
 
         {/* Error Notification if Execution Failed */}
         {latestRun?.status === 'failed' && (
-          <div className="p-4 rounded-xl bg-rose-950/40 border border-rose-500/40 text-rose-200 text-xs space-y-1">
-            <div className="font-bold flex items-center gap-2 text-rose-300">
-              <ShieldAlert className="w-4 h-4" />
+          <div className="banner-danger">
+            <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+              <ShieldAlert size={16} />
               Migration Run Failed ({latestRun.error_details})
             </div>
-            <p className="text-[11px] text-slate-300">
+            <p style={{ fontSize: '0.8125rem', margin: 0 }}>
               The target database transaction was automatically rolled back. You can retry the run to resume execution without duplicate insertions.
             </p>
           </div>
@@ -211,130 +207,130 @@ export const ExecutionPage: React.FC = () => {
 
       {/* Live Run Metrics Cards */}
       {latestRun && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="glass-panel p-4 rounded-xl border border-slate-800">
-            <div className="text-[11px] font-mono text-slate-400 uppercase">Run Status</div>
-            <div
-              className={`text-xl font-bold font-mono mt-1 ${
-                latestRun.status === 'completed'
-                  ? 'text-emerald-400'
-                  : latestRun.status === 'failed'
-                  ? 'text-rose-400'
-                  : latestRun.status === 'rolled_back'
-                  ? 'text-amber-400'
-                  : 'text-sky-400'
-              }`}
-            >
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+          <div className="stat-block">
+            <div className="stat-label">RUN STATUS</div>
+            <div className="stat-number" style={{
+              fontSize: '1.25rem',
+              color: latestRun.status === 'completed'
+                ? 'var(--color-success)'
+                : latestRun.status === 'failed'
+                ? 'var(--color-danger)'
+                : latestRun.status === 'rolled_back'
+                ? 'var(--color-warning)'
+                : 'var(--color-accent)'
+            }}>
               {latestRun.status.toUpperCase()}
             </div>
-            <div className="text-[10px] font-mono text-slate-500 truncate mt-1">
+            <div style={{ fontSize: '0.75rem', color: 'var(--color-muted)', marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               ID: {latestRun.id.substring(0, 12)}...
             </div>
           </div>
 
-          <div className="glass-panel p-4 rounded-xl border border-slate-800">
-            <div className="text-[11px] font-mono text-slate-400 uppercase">Inserted Rows</div>
-            <div className="text-2xl font-bold text-white font-mono mt-1">{latestRun.inserted_count}</div>
-            <div className="text-[10px] text-slate-400 mt-1">Committed to mock target store</div>
-          </div>
-
-          <div className="glass-panel p-4 rounded-xl border border-slate-800">
-            <div className="text-[11px] font-mono text-slate-400 uppercase">Skipped Existing</div>
-            <div className="text-2xl font-bold text-amber-400 font-mono mt-1">
-              {latestRun.skipped_existing_count}
+          <div className="stat-block">
+            <div className="stat-label">INSERTED ROWS</div>
+            <div className="stat-number">{latestRun.inserted_count}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--color-muted)', marginTop: '4px' }}>
+              Committed to target store
             </div>
-            <div className="text-[10px] text-slate-400 mt-1">Idempotency conflict prevented</div>
           </div>
 
-          <div className="glass-panel p-4 rounded-xl border border-slate-800">
-            <div className="text-[11px] font-mono text-slate-400 uppercase">Total Accepted</div>
-            <div className="text-2xl font-bold text-sky-400 font-mono mt-1">{latestRun.total_accepted}</div>
-            <div className="text-[10px] text-slate-400 mt-1">Target expected count</div>
+          <div className="stat-block">
+            <div className="stat-label">SKIPPED EXISTING</div>
+            <div className="stat-number">{latestRun.skipped_existing_count}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--color-muted)', marginTop: '4px' }}>
+              Idempotency conflict prevented
+            </div>
+          </div>
+
+          <div className="stat-block">
+            <div className="stat-label">TOTAL ACCEPTED</div>
+            <div className="stat-number">{latestRun.total_accepted}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--color-muted)', marginTop: '4px' }}>
+              Target expected count
+            </div>
           </div>
         </div>
       )}
 
       {/* Automated 3-Point Reconciliation Panel */}
-      <div className="glass-panel p-5 rounded-xl border border-slate-800 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
           <div>
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <Database className="w-5 h-5 text-indigo-400" />
+            <h2 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+              <Database size={18} style={{ color: 'var(--color-accent)' }} />
               Automated 3-Point Reconciliation Engine
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="page-subtitle" style={{ marginTop: '2px' }}>
               Continuously verifies invariants and key-set parity between source dataset, dry-run, and target store.
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             {reconciliation && (
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-bold border font-mono ${
-                  reconciliation.overall_status === 'PASS'
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                    : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                }`}
-              >
-                OVERALL STATUS: {reconciliation.overall_status}
+              <span className={reconciliation.overall_status === 'PASS' ? 'badge-success' : 'badge-danger'}>
+                STATUS: {reconciliation.overall_status}
               </span>
             )}
 
             <button
               onClick={() => runReconciliation()}
               disabled={recLoading}
-              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg border border-slate-700"
+              className="btn btn-secondary btn-sm"
             >
+              <RefreshCw size={14} className={recLoading ? 'spin' : ''} />
               Re-verify
             </button>
           </div>
         </div>
 
         {/* Checks Table */}
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {reconciliation?.checks.map((check, idx) => (
             <div
               key={idx}
-              className={`p-4 rounded-xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                check.status === 'PASS'
-                  ? 'bg-slate-900/60 border-slate-800 text-slate-200'
-                  : 'bg-rose-950/30 border-rose-500/40 text-rose-200'
-              }`}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '12px 16px',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius)',
+                backgroundColor: check.status === 'PASS' ? 'var(--color-bg)' : 'var(--color-danger-soft)',
+                flexWrap: 'wrap',
+                gap: '12px',
+              }}
             >
-              <div className="space-y-0.5">
-                <div className="font-bold text-white flex items-center gap-2">
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', maxWidth: '65%' }}>
+                <div style={{ marginTop: '2px' }}>
                   {check.status === 'PASS' ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <CheckCircle2 size={16} style={{ color: 'var(--color-success)' }} />
                   ) : (
-                    <XCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                    <XCircle size={16} style={{ color: 'var(--color-danger)' }} />
                   )}
-                  {check.name}
                 </div>
-                <div className="text-[11px] text-slate-400">{check.description}</div>
-                {check.discrepancy_details && (
-                  <div className="text-[11px] text-rose-300 font-mono pt-1">
-                    {check.discrepancy_details}
-                  </div>
-                )}
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{check.name}</div>
+                  <div style={{ fontSize: '0.8125rem', color: 'var(--color-muted)' }}>{check.description}</div>
+                  {check.discrepancy_details && (
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-danger)', marginTop: '4px', fontFamily: 'monospace' }}>
+                      {check.discrepancy_details}
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <div className="flex items-center gap-4 text-right font-mono shrink-0">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '0.8125rem', textAlign: 'right' }}>
                 <div>
-                  <span className="text-slate-500 text-[10px] block">Expected</span>
-                  <span className="text-slate-300">{String(check.expected)}</span>
+                  <span style={{ fontSize: '0.6875rem', color: 'var(--color-muted)', display: 'block' }}>Expected</span>
+                  <code>{String(check.expected)}</code>
                 </div>
                 <div>
-                  <span className="text-slate-500 text-[10px] block">Actual</span>
-                  <span className="text-white font-bold">{String(check.actual)}</span>
+                  <span style={{ fontSize: '0.6875rem', color: 'var(--color-muted)', display: 'block' }}>Actual</span>
+                  <code>{String(check.actual)}</code>
                 </div>
                 <div>
-                  <span
-                    className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                      check.status === 'PASS'
-                        ? 'bg-emerald-500/20 text-emerald-300'
-                        : 'bg-rose-500/20 text-rose-300'
-                    }`}
-                  >
+                  <span className={check.status === 'PASS' ? 'badge-success' : 'badge-danger'}>
                     {check.status}
                   </span>
                 </div>
@@ -344,29 +340,31 @@ export const ExecutionPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Confirmation Modals */}
+      {/* Confirmation Modal - Execute */}
       {showConfirmExec && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-md w-full shadow-2xl">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-2">
-              <PlayCircle className="w-5 h-5 text-emerald-400" />
-              Confirm Migration Execution
-            </h3>
-            <p className="text-xs text-slate-300 mb-6">
+        <div className="dialog-overlay" onClick={() => setShowConfirmExec(false)}>
+          <div className="dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="dialog-header">
+              <h3 className="dialog-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <PlayCircle size={18} style={{ color: 'var(--color-accent)' }} />
+                Confirm Migration Execution
+              </h3>
+            </div>
+            <p style={{ fontSize: '0.875rem', color: 'var(--color-muted)', marginBottom: '20px' }}>
               You are about to insert accepted records for approved plan version{' '}
-              <strong className="text-white">v{activeVersion?.version_num}</strong> into the mock target SQLite store.
+              <strong>v{activeVersion?.version_num}</strong> into the target database.
             </p>
-            <div className="flex justify-end gap-3">
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
               <button
                 onClick={() => setShowConfirmExec(false)}
-                className="px-4 py-2 text-xs text-slate-300 hover:bg-slate-800 rounded-lg"
+                className="btn btn-secondary"
               >
                 Cancel
               </button>
               <button
                 onClick={() => executeMutation.mutate()}
                 disabled={executeMutation.isPending}
-                className="px-4 py-2 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg shadow-lg shadow-emerald-600/30"
+                className="btn btn-primary"
               >
                 {executeMutation.isPending ? 'Executing...' : 'Confirm & Execute'}
               </button>
@@ -375,28 +373,31 @@ export const ExecutionPage: React.FC = () => {
         </div>
       )}
 
+      {/* Confirmation Modal - Rollback */}
       {showConfirmRollback && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-md w-full shadow-2xl">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-2">
-              <RotateCcw className="w-5 h-5 text-rose-400" />
-              Confirm Rollback
-            </h3>
-            <p className="text-xs text-slate-300 mb-6">
+        <div className="dialog-overlay" onClick={() => setShowConfirmRollback(false)}>
+          <div className="dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="dialog-header">
+              <h3 className="dialog-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <RotateCcw size={18} style={{ color: 'var(--color-danger)' }} />
+                Confirm Rollback
+              </h3>
+            </div>
+            <p style={{ fontSize: '0.875rem', color: 'var(--color-muted)', marginBottom: '20px' }}>
               This will delete all records in the target store associated with run{' '}
-              <code className="text-rose-300">{latestRun?.id}</code> inside a single database transaction.
+              <code>{latestRun?.id}</code> inside a single database transaction.
             </p>
-            <div className="flex justify-end gap-3">
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
               <button
                 onClick={() => setShowConfirmRollback(false)}
-                className="px-4 py-2 text-xs text-slate-300 hover:bg-slate-800 rounded-lg"
+                className="btn btn-secondary"
               >
                 Cancel
               </button>
               <button
                 onClick={() => rollbackMutation.mutate()}
                 disabled={rollbackMutation.isPending}
-                className="px-4 py-2 text-xs bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg shadow-lg shadow-rose-600/30"
+                className="btn btn-danger"
               >
                 {rollbackMutation.isPending ? 'Rolling back...' : 'Yes, Rollback Target Rows'}
               </button>

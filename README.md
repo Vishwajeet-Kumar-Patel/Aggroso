@@ -2,6 +2,8 @@
 
 A full-stack web application that helps plan, validate, execute, reconcile and roll back the migration of a bounded dataset from a legacy source schema to a modern target schema into a **mock target store**. An AI agent proposes mappings and plans using read-only inspection tools. A human must approve a specific plan version before anything executes.
 
+Designed with a minimal, professional, dusty-and-white aesthetic, fast page load speeds, complete SEO meta tags, code-splitting, and cloud deployment readiness on Render and Vercel.
+
 ---
 
 ## ✨ Key Features
@@ -18,7 +20,7 @@ A full-stack web application that helps plan, validate, execute, reconcile and r
 | **Fault Injection Hook** | Simulate mid-run failures at any record index to test retry/rollback resilience |
 | **3-Point Reconciliation** | Automated source ↔ dry-run ↔ target count and key-set parity verification |
 | **Append-Only Audit Trail** | Every action (proposal, approval, execution, rollback) is immutably logged with payloads |
-| **Glassmorphic Dark UI** | Premium React frontend with Inter font, gradient accents, and micro-animations |
+| **Minimal Dusty-White UI** | Plain, distraction-free interface with system fonts, WCAG AA contrast, and zero horizontal scroll |
 
 ---
 
@@ -28,10 +30,10 @@ A full-stack web application that helps plan, validate, execute, reconcile and r
 ┌─────────────────────┐     ┌──────────────────────────┐
 │  React Frontend     │────▶│  FastAPI Backend          │
 │  Vite + TypeScript  │     │  Uvicorn + SQLAlchemy 2.x │
-│  TanStack Query     │     │                            │
+│  TanStack Query     │     │  GZipMiddleware           │
 │  Tailwind CSS       │     │  ┌──────────┐ ┌─────────┐ │
 │  Lucide Icons       │     │  │  app.db  │ │target.db│ │
-│  React Router       │     │  │(plans,   │ │(migrated│ │
+│  React Router (Lazy)│     │  │(plans,   │ │(migrated│ │
 └─────────────────────┘     │  │ audit,   │ │ data)   │ │
                             │  │ quarant.)│ │         │ │
                             │  └──────────┘ └─────────┘ │
@@ -46,8 +48,8 @@ See [docs/architecture.md](docs/architecture.md) for the full component diagram.
 
 ### Prerequisites
 
-- **Python** 3.12+
-- **Node.js** 22+ with npm
+- **Python** 3.11+
+- **Node.js** 18+ with npm
 - (Optional) **Docker** and **Docker Compose**
 
 ### 1. Install Dependencies
@@ -78,46 +80,39 @@ npm run dev
 
 Open **http://localhost:5173** in your browser.
 
-### 3. (Alternative) Docker Compose
+### 3. Production Deployment (Render + Vercel)
 
-```bash
-cp .env.example .env
-# Optionally add your ANTHROPIC_API_KEY to .env
-docker compose up --build
-```
-
-Open **http://localhost:3000** in your browser.
+See [docs/deployment.md](docs/deployment.md) for exact copy-paste instructions to deploy the backend on Render and frontend on Vercel:
+- **Backend:** Render Blueprint with [`render.yaml`](render.yaml)
+- **Frontend:** Vercel SPA deployment with [`frontend/vercel.json`](frontend/vercel.json)
 
 ---
 
-## 🧪 Testing
+## 🧪 Testing & Verification
 
-### Run All Tests
+### Run All Verification Checks
 
 ```bash
-# Backend (35 tests, ~91% coverage)
-cd backend
-python -m pytest --tb=short --cov=app --cov-report=term-missing -q
-
-# Frontend (4 tests)
-cd frontend
-npx vitest run --reporter=verbose
+make verify
 ```
 
-### Test Coverage Areas
+### Unit & Integration Test Suites
 
-| Suite | File | Tests |
-|-------|------|-------|
-| Transforms | `test_transforms.py` | 13 pure transform functions |
-| Plans | `test_plans.py` | Versioning, hashing, approval gates |
-| Audit | `test_audit.py` | Append-only enforcement |
-| Dry Run | `test_dry_run.py` | Determinism, 500-record limit, quarantine |
-| Execution | `test_execution.py` | Idempotency, transactional commit |
-| Reconciliation | `test_reconciliation.py` | 3-point count/key verification |
-| Rollback | `test_rollback.py` | Transactional rollback by run_id |
-| Agent | `test_agent.py` | Fallback proposal, tool isolation |
-| API | `test_api.py` | HTTP integration tests |
-| Frontend | `__tests__/*.test.tsx` | Metrics invariants, gating logic, diff |
+```bash
+# Backend (68 pytest tests)
+cd backend
+pytest -q
+
+# Frontend (9 Vitest tests)
+cd frontend
+npx vitest run
+
+# Link Checker
+node scripts/check_links.mjs
+
+# Deployment Smoke Test
+./scripts/smoke_test.sh http://localhost:8000 http://localhost:5173
+```
 
 ---
 
@@ -133,19 +128,24 @@ Aggroso/
 │   │   ├── data/            # Seed JSON files (schemas, samples, registry)
 │   │   ├── domain/          # SQLAlchemy models, Pydantic schemas, transforms
 │   │   ├── services/        # Business logic layer
-│   │   └── main.py          # FastAPI app entry point
-│   ├── tests/               # Pytest suite (9 test files)
+│   │   └── main.py          # FastAPI app entry point with GZipMiddleware
+│   ├── tests/               # Pytest suite (68 tests)
 │   └── requirements.txt
 ├── frontend/
 │   ├── src/
 │   │   ├── api/             # Type-safe API client
-│   │   ├── components/      # Reusable layout components
-│   │   ├── pages/           # 6 screen pages
+│   │   ├── components/      # Reusable layout & safe email rendering components
+│   │   ├── hooks/           # usePageTitle hook with route meta tags
+│   │   ├── pages/           # 6 code-split lazy loaded pages + 404 page
 │   │   ├── types/           # TypeScript interfaces
 │   │   └── __tests__/       # Vitest test suite
+│   ├── public/              # Favicon and assets
+│   ├── vercel.json          # SPA rewrite rules & headers
 │   └── package.json
-├── docs/                    # Architecture, API, decisions, demo script
-├── Makefile                 # Test, lint, dev, e2e, verify targets
+├── docs/                    # Architecture, API, decisions, demo script, deployment
+├── scripts/                 # check_links.mjs, smoke_test.sh
+├── Makefile                 # Test, lint, dev, verify, smoke targets
+├── render.yaml              # Render blueprint for cloud deploy
 ├── docker-compose.yml       # Full-stack containerized deployment
 ├── Dockerfile.backend
 ├── Dockerfile.frontend
@@ -156,10 +156,12 @@ Aggroso/
 
 ## 📖 Documentation
 
+- [Deployment Guide](docs/deployment.md) — Render and Vercel setup
 - [Architecture](docs/architecture.md) — Component diagram, data flow, design decisions
 - [API Reference](docs/api.md) — Full REST API with request/response examples
 - [Design Decisions](docs/decisions.md) — ADRs for key technical choices
 - [Demo Script](docs/demo-script.md) — Step-by-step walkthrough for evaluators
+- [Baseline & Performance Targets](docs/baseline.md) — Web hygiene and performance metrics
 
 ---
 
@@ -170,34 +172,7 @@ Aggroso/
 - **Target store is SQLite** — explicitly marked as a mock sandbox
 - **Append-only audit** blocks UPDATE/DELETE on audit events at the service layer
 - **AI agent tools are read-only** — no write access to any database
-
----
-
-## 📋 API Overview
-
-All endpoints are under `/api`. Full OpenAPI docs available at `http://localhost:8000/docs`.
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/schemas/source` | Source schema definition |
-| GET | `/api/schemas/target` | Target schema definition |
-| GET | `/api/schemas/transformations` | Transform rule whitelist registry |
-| GET | `/api/sample` | Paginated source records |
-| POST | `/api/agent/propose` | AI agent proposal (LLM or fallback) |
-| POST | `/api/agent/revise` | Revise proposal with clarification answers |
-| GET | `/api/plans/active` | Active plan with current version |
-| POST | `/api/plans/{id}/versions` | Create new immutable plan version |
-| POST | `/api/plans/versions/{id}/approve` | Approve version (unlocks execution) |
-| POST | `/api/dry-run` | Execute deterministic dry run |
-| POST | `/api/dry-run/verify-determinism` | Verify N-run byte-identical output |
-| GET | `/api/quarantine` | Filtered quarantine records |
-| GET | `/api/quarantine/export` | Export quarantine as JSON or CSV |
-| POST | `/api/runs/execute` | Execute migration (requires approval) |
-| POST | `/api/runs/retry` | Retry failed run |
-| POST | `/api/runs/rollback` | Rollback target rows transactionally |
-| POST | `/api/reconciliation` | Run 3-point reconciliation |
-| GET | `/api/audit` | Filtered audit event timeline |
-| POST | `/api/demo/reset` | Reset demo to clean state |
+- **Safe Email Rendering** — strict RFC-compliant email validation before `mailto:` generation; malformed emails rendered as safe plain text
 
 ---
 

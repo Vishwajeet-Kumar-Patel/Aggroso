@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from app.api.api_router import api_router
 from app.core.config import settings
@@ -24,10 +25,13 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+# GZip compression for responses > 1000 bytes
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all for development and local testing
+    allow_origins=settings.CORS_ORIGINS if settings.CORS_ORIGINS else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
